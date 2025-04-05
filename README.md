@@ -13,6 +13,7 @@ Before you run the bot, make sure you have the following:
 - **Node.js** installed (version >= 14.x).
 - **A GitHub account** (for cloning the repository, if needed).
 - **A Tea Sepolia RPC endpoint** (you can get this from [Alchemy](https://www.alchemy.com/)).
+- **Recipients.txt** filled with destination address.
 
 ## How to Install & Run
 
