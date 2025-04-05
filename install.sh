@@ -17,6 +17,21 @@ display_welcome_message() {
   echo -e "\x1b[0m"  # Reset to normal text color
 }
 
+# Function to check and convert recipients.txt to recipients.json
+convert_recipients_txt_to_json() {
+  if [ -f recipients.txt ]; then
+    echo -e "\x1b[32mChecking recipients.txt... Found! Converting to recipients.json...\x1b[0m"
+
+    # Read recipients from recipients.txt, convert to JSON array
+    recipients=$(awk '{print "\"" $0 "\""}' recipients.txt | paste -sd, -)
+    echo "[$recipients]" > recipients.json
+
+    echo -e "\x1b[32mRecipient addresses have been converted to recipients.json.\x1b[0m"
+  else
+    echo -e "\x1b[31mrecipients.txt not found. Please create a recipients.txt file with one address per line.\x1b[0m"
+  fi
+}
+
 # Function to install project dependencies
 install_dependencies() {
   echo "Installing project dependencies..."
@@ -116,8 +131,8 @@ const sendTransaction = async (wallet, recipient, amount) => {
   try {
     const signer = new ethers.Wallet(wallet.privateKey, provider);
 
+    // If the token type is TEA (native token)
     if (TOKEN_TYPE === 'TEA') {
-      // Send TEA (native token)
       const weiAmount = ethers.parseUnits(amount.toString(), 18); // Converting to Wei
 
       const tx = await signer.sendTransaction({
@@ -128,8 +143,9 @@ const sendTransaction = async (wallet, recipient, amount) => {
       console.log(\`TX Hash: \${tx.hash}\`);
       await tx.wait();
       console.log('Transaction confirmed: Success');
-    } else if (TOKEN_TYPE === 'Another') {
-      // Send Another Token (ERC-20)
+    } 
+    // If the token type is "Another" (ERC-20 token)
+    else if (TOKEN_TYPE === 'Another') {
       const tokenContract = new ethers.Contract(CONTRACT_ADDRESS, [
         'function transfer(address recipient, uint256 amount) public returns (bool)',
       ], signer);
@@ -150,15 +166,13 @@ const sendTransaction = async (wallet, recipient, amount) => {
 };
 
 // Example usage
-const wallet = {
-  address: 'your_wallet_address',
-  privateKey: 'your_private_key',
-};
+const wallets = require('./wallets.json');
+const recipient = 'recipient_wallet_address'; // Replace with actual recipient address
+const amount = '0.05'; // Replace with the amount of TEA or other token you want to send
 
-const recipient = 'recipient_wallet_address';
-const amount = '0.05'; // Amount to send
-
-sendTransaction(wallet, recipient, amount);
+wallets.forEach(wallet => {
+  sendTransaction(wallet, recipient, amount);
+});
 EOL
   echo "bot.js has been created."
 }
@@ -188,6 +202,7 @@ install_dependencies
 create_env_file
 create_wallets_file
 choose_token_type  # Select token type (TEA or Another)
+convert_recipients_txt_to_json  # Convert recipients.txt to recipients.json
 create_bot_js
 create_transaction_amount
 
