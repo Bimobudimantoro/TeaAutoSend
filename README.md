@@ -1,19 +1,3 @@
-Ah, I understand now! You want to create the `README.md` file **directly on GitHub** using the website interface, and you'd like to have the content formatted correctly as code.
-
-Here’s how you can do it **directly on GitHub**:
-
-### Steps to Create `README.md` Directly on GitHub
-
-1. **Go to your GitHub Repository**:
-   - Open your browser and go to your repository (e.g., `https://github.com/yourusername/auto-tx-install`).
-
-2. **Create the `README.md` file**:
-   - Click the **Add file** button.
-   - Choose **Create new file**.
-   - Name the file `README.md`.
-
-3. **Copy and paste the code below into the GitHub editor**:
-
 ```markdown
 # BOT AUTO TX TEA TESTNET
 
