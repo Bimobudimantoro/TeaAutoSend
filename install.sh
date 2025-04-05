@@ -123,9 +123,17 @@ const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 const TOKEN_TYPE = process.env.TOKEN_TYPE;  // TEA or Another
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS; // ERC-20 token address if 'Another'
 
-// Set up provider (ensure ENS resolution is bypassed)
-const provider = new ethers.JsonRpcProvider(TEA_RPC_URL, {
-  ensAddress: null,  // Disable ENS resolution
+// Tea Sepolia network configuration
+const teaSepoliaNetwork = {
+  name: "sepolia",  // Name of the network
+  chainId: 10218,  // Chain ID for Tea Sepolia
+  rpcUrl: TEA_RPC_URL,  // RPC URL for Tea Sepolia
+};
+
+// Set up provider for Tea Sepolia (disable ENS resolution)
+const provider = new ethers.JsonRpcProvider(teaSepoliaNetwork.rpcUrl, {
+  name: teaSepoliaNetwork.name,
+  chainId: teaSepoliaNetwork.chainId,
 });
 
 // Function to send TEA or another token
