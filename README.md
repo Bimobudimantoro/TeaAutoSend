@@ -89,20 +89,3 @@ If you found this bot useful and would like to support me, you can make a small 
 - **SOLANA**: `3mSmt3fLQdP1eG8JH9fGTU2Wm3Z2HSs2fbaf1KyPjUq7`
 
 Thank you for your support!
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-```
-
-### Steps to Save It on GitHub:
-
-1. After pasting the corrected content, **scroll down** to the bottom.
-2. **Commit the changes** by clicking the **"Commit changes"** button. 
-
-This will update the `README.md` file in your GitHub repository.
-
-### Result:
-This should resolve the formatting issue and provide a **clean, easy-to-read layout** on GitHub for all users.
-
-Let me know if you need any more assistance!
