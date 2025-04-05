@@ -23,13 +23,14 @@ You can directly download the `install.sh` script from GitHub.
 Run the following command in your terminal to download the script and start the installation:
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Bimobudimantoro/TeaAutoSend/main/install.sh -o install.sh && chmod +x install.sh && ./install.sh```
+curl -sSL https://raw.githubusercontent.com/Bimobudimantoro/TeaAutoSend/main/install.sh -o install.sh && chmod +x install.sh && ./install.sh
+```
 
 ### 2. What the Script Does
 
 The `install.sh` script automates the entire setup process for you. Here's a breakdown of the actions performed by the script:
 
-- **Installs dependencies**: 
+- **Installs dependencies**:
    - Automatically installs the required Node.js dependencies (`ethers.js`, `axios`, `node-cron`, `dotenv`) using `npm install`.
    
 - **Prompts for Alchemy API key**:
@@ -94,13 +95,14 @@ Thank you for your support!
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 ```
 
-4. **Commit the File**:
-   - After pasting the content above, scroll down and click the **"Commit new file"** button.
+### Steps to Save It on GitHub:
 
-This will create the `README.md` directly on GitHub with the correct formatting.
+1. After pasting the corrected content, **scroll down** to the bottom.
+2. **Commit the changes** by clicking the **"Commit changes"** button. 
 
-### Users Can Now:
-- Directly download `install.sh` using the `curl` command from GitHub.
-- Run the installation with a **single command** and start using your bot.
+This will update the `README.md` file in your GitHub repository.
 
-Let me know if you need any further guidance!
+### Result:
+This should resolve the formatting issue and provide a **clean, easy-to-read layout** on GitHub for all users.
+
+Let me know if you need any more assistance!
