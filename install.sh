@@ -123,8 +123,10 @@ const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 const TOKEN_TYPE = process.env.TOKEN_TYPE;  // TEA or Another
 const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS; // ERC-20 token address if 'Another'
 
-// Set up provider
-const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
+// Set up provider (ensure ENS resolution is bypassed)
+const provider = new ethers.JsonRpcProvider(TEA_RPC_URL, {
+  ensAddress: null,  // Disable ENS resolution
+});
 
 // Function to send TEA or another token
 const sendTransaction = async (wallet, recipient, amount) => {
