@@ -17,37 +17,9 @@ display_welcome_message() {
   echo -e "\x1b[0m"  # Reset to normal text color
 }
 
-# Function to simulate loading with a spinner animation
-loading_spinner() {
-  spinner="|/-\\"
-  i=0
-  while :; do  # Infinite loop to simulate loading
-    echo -n "${spinner:i%4:1}  "
-    sleep 0.2
-    echo -ne "\r"
-    ((i++))
-  done
-}
-
-# Function to check if Node.js is installed and install it if necessary
-install_nodejs() {
-  if ! command -v node &> /dev/null
-  then
-    curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash - > /dev/null 2>&1
-    sudo apt-get install -y nodejs > /dev/null 2>&1
-  fi
-}
-
-# Function to install jq (for JSON manipulation)
-install_jq() {
-  if ! command -v jq &> /dev/null
-  then
-    sudo apt-get install -y jq > /dev/null 2>&1
-  fi
-}
-
-# Function to install project dependencies (including axios, node-cron, dotenv, ethers.js)
+# Function to install project dependencies
 install_dependencies() {
+  echo "Installing project dependencies..."
   npm install --save axios node-cron dotenv ethers > /dev/null 2>&1
 }
 
@@ -99,147 +71,94 @@ create_wallets_file() {
   done
 }
 
-# Function to automatically convert the list of recipient addresses into JSON format
-convert_recipients_to_json() {
-  if [ -f "recipients.txt" ]; then
-    echo "Checking recipients.txt... Found! Converting to recipients.json..."
+# Function to prompt user to select TEA or another token
+choose_token_type() {
+  echo -e "\x1b[32mPlease select the token to transfer (TEA or Another):\x1b[0m"
+  echo "1) TEA"
+  echo "2) Another Token"
+  read -p "Enter your choice (1 or 2): " token_choice
 
-    # Start the JSON array
-    echo "[" > recipients.json
-
-    # Loop through the file and add each address to the JSON array
-    while read address; do
-      echo "  \"$address\"," >> recipients.json
-    done < "recipients.txt"
-
-    # Remove the last comma and close the JSON array
-    sed -i '$ s/,$//' recipients.json
-    echo "]" >> recipients.json
-
-    echo "Recipient addresses have been converted to recipients.json."
+  if [ "$token_choice" == "1" ]; then
+    echo -e "\x1b[32mYou selected TEA.\x1b[0m"
+    export TOKEN_TYPE="TEA"
+  elif [ "$token_choice" == "2" ]; then
+    echo -e "\x1b[32mYou selected another token.\x1b[0m"
+    read -p "Please enter the contract address of the token: " contract_address
+    export TOKEN_TYPE="Another"
+    export CONTRACT_ADDRESS="$contract_address"
+    echo -e "\x1b[32mContract address saved: $CONTRACT_ADDRESS\x1b[0m"
   else
-    echo "No recipients.txt file found! Please create it manually or place it in this directory."
+    echo -e "\x1b[31mInvalid choice, please select 1 or 2.\x1b[0m"
+    choose_token_type  # Recursively call the function if invalid input
   fi
 }
 
-# Function to create bot.js automatically with Tea Sepolia RPC details
+# Function to create bot.js file automatically with Tea Sepolia RPC details
 create_bot_js() {
   echo "Creating bot.js file..."
   cat > bot.js <<EOL
-const axios = require('axios');
-const cron = require('node-cron');
+const { ethers } = require('ethers');
 require('dotenv').config();
 const fs = require('fs');
-const { ethers } = require('ethers');
+const axios = require('axios');
 
-// Load RPC URL, Chain ID, and Currency from .env
+// Load the .env variables
 const TEA_RPC_URL = process.env.TEA_RPC_URL;
-const TEA_CHAIN_ID = process.env.TEA_CHAIN_ID;
-const TEA_CURRENCY_SYMBOL = process.env.TEA_CURRENCY_SYMBOL;
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+const TOKEN_TYPE = process.env.TOKEN_TYPE;  // TEA or Another
+const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS; // ERC-20 token address if 'Another'
 
-// Load wallets from file (if exists)
-const loadWallets = () => {
-  if (fs.existsSync('wallets.json')) {
-    const rawData = fs.readFileSync('wallets.json');
-    return JSON.parse(rawData);
-  } else {
-    return []; // No wallets file, return empty array
-  }
-};
+// Set up provider
+const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
 
-// Load recipients from file (if exists)
-const loadRecipients = () => {
-  if (fs.existsSync('recipients.json')) {
-    const rawData = fs.readFileSync('recipients.json');
-    return JSON.parse(rawData);
-  } else {
-    return []; // No recipients file, return empty array
-  }
-};
-
-// Function to send a transaction using Tea Sepolia RPC
+// Function to send TEA or another token
 const sendTransaction = async (wallet, recipient, amount) => {
   try {
-    // Check if the amount is valid
-    if (!amount || isNaN(amount) || amount <= 0) {
-      throw new Error("Invalid transaction amount");
-    }
-
-    // Set up provider and signer
-    const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
     const signer = new ethers.Wallet(wallet.privateKey, provider);
 
-    // Ensure the amount is formatted correctly as a string, and then convert to Wei (18 decimals for TEA)
-    const weiAmount = ethers.parseUnits(amount.toString(), 18); // Convert TEA to Wei
+    if (TOKEN_TYPE === 'TEA') {
+      // Send TEA (native token)
+      const weiAmount = ethers.parseUnits(amount.toString(), 18); // Converting to Wei
 
-    // Fetch fee data (gas price, max priority fee, etc.) using `getFeeData()` (for ethers.js v6)
-    const feeData = await provider.getFeeData();
-    const gasPrice = feeData.gasPrice || ethers.BigNumber.from('0'); // Default gas price if not available
+      const tx = await signer.sendTransaction({
+        to: recipient,
+        value: weiAmount, // For native TEA
+      });
 
-    // Set up the transaction details
-    const transaction = {
-      to: recipient,
-      value: weiAmount, // Amount in WEI (converted from TEA)
-      gasLimit: 21000, // Default gas limit for simple ETH transfer
-      gasPrice: gasPrice, // Gas price
-    };
+      console.log(\`TX Hash: \${tx.hash}\`);
+      await tx.wait();
+      console.log('Transaction confirmed: Success');
+    } else if (TOKEN_TYPE === 'Another') {
+      // Send Another Token (ERC-20)
+      const tokenContract = new ethers.Contract(CONTRACT_ADDRESS, [
+        'function transfer(address recipient, uint256 amount) public returns (bool)',
+      ], signer);
 
-    // Sign and send the transaction
-    const txResponse = await signer.sendTransaction(transaction);
+      const tokenAmount = ethers.parseUnits(amount.toString(), 18); // Assuming 18 decimals for the token
 
-    // Fetch wallet balance after transaction
-    const balance = await getBalance(wallet.address);
-
-    // Log transaction details in requested format
-    console.log("Wallet Address: \x1b[1m\x1b[30m" + wallet.address + "\x1b[0m");
-    console.log("Wallet balance : \x1b[33m" + balance + " " + TEA_CURRENCY_SYMBOL + "\x1b[0m");
-    console.log("Transactions : \x1b[32mOK\x1b[0m");
-    console.log("TX Hash: \x1b[32m" + txResponse.hash + "\x1b[0m");
-    console.log("++++++++++++++++++++++++++++");
-  } catch (error) {
-    console.error('Transaction Failed:', error.message);
-  }
-};
-
-// Function to fetch the wallet balance
-const getBalance = async (address) => {
-  try {
-    const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
-    const balance = await provider.getBalance(address);
-    return ethers.formatUnits(balance, 18); // Convert from Wei to TEA
-  } catch (error) {
-    console.error('Failed to fetch balance:', error.message);
-    return 0;
-  }
-};
-
-// Function to start the bulk sending process with 1-minute intervals
-const startBulkSend = () => {
-  let walletIndex = 0;
-  let recipientIndex = 0;
-  const wallets = loadWallets();
-  const recipients = loadRecipients();
-  const transactionAmount = '0.05'; // Transaction amount in TEA (fixed)
-
-  cron.schedule('* * * * *', async () => {
-    if (walletIndex < wallets.length && recipientIndex < recipients.length) {
-      await sendTransaction(wallets[walletIndex], recipients[recipientIndex], transactionAmount);
-      walletIndex++;
-      recipientIndex++;
-
-      if (walletIndex >= wallets.length) walletIndex = 0;
-      if (recipientIndex >= recipients.length) recipientIndex = 0;
+      const tx = await tokenContract.transfer(recipient, tokenAmount);
+      console.log(\`TX Hash: \${tx.hash}\`);
+      await tx.wait();
+      console.log('Transaction confirmed: Success');
     } else {
-      console.log('No more transactions to send.');
+      console.log('Invalid token type.');
     }
-  });
 
-  console.log('Bulk sending started with 1-minute intervals.');
+  } catch (error) {
+    console.error('Transaction failed:', error.message);
+  }
 };
 
-// Start the bulk sending process
-startBulkSend();
+// Example usage
+const wallet = {
+  address: 'your_wallet_address',
+  privateKey: 'your_private_key',
+};
+
+const recipient = 'recipient_wallet_address';
+const amount = '0.05'; // Amount to send
+
+sendTransaction(wallet, recipient, amount);
 EOL
   echo "bot.js has been created."
 }
@@ -248,10 +167,10 @@ EOL
 create_transaction_amount() {
   echo "Please enter the nominal amount to send per transaction:"
   read transactionAmount
-  echo -e "\x1b[32mTransaction amount set to: $transactionAmount TEA\x1b[0m"  # Set to green color
+  echo -e "\x1b[32mTransaction amount set to: $transactionAmount TEA\x1b[0m"
 }
 
-# Function to run the bot in the foreground (on screen)
+# Run the bot in the foreground
 run_bot_in_foreground() {
   echo "BOT is running..."
   node bot.js
@@ -262,30 +181,15 @@ display_welcome_message  # Show the welcome message
 
 echo -e "\x1b[32mStarting one-click installer...\x1b[0m"
 
-# Run installation steps with spinner animation
-{
-  install_nodejs &
-  install_jq &
-  install_dependencies &
-  wait  # Wait for all background processes to finish
-}
+# Run installation steps
+install_dependencies
 
-# Step 4: Create the .env file with Tea Sepolia public network details and fixed public RPC URL
+# Create .env, wallets, bot.js, etc.
 create_env_file
-
-# Step 5: Create the wallets.json file and add wallet data (one by one)
 create_wallets_file
-
-# Step 6: Check and convert recipients.txt to recipients.json (if exists)
-convert_recipients_to_json
-
-# Step 7: Ask for transaction amount
+choose_token_type  # Select token type (TEA or Another)
+create_bot_js
 create_transaction_amount
 
-# Step 8: Create the bot.js file
-create_bot_js
-
-# Step 9: Run the bot in the foreground
+# Run the bot
 run_bot_in_foreground
-
-echo "The bot is running on your screen. You can check its output directly in the terminal."
