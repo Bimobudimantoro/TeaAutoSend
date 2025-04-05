@@ -24,7 +24,7 @@ Run the following command in your terminal to download the script and start the 
 ```bash
 curl -sSL https://github.com/yourusername/auto-tx-install/raw/master/install.sh -o install.sh && chmod +x install.sh && ./install.sh
 
-2. What the Script Does
+## 2. What the Script Does
 The install.sh script does the following:
 
 Installs required dependencies (like ethers.js, axios, and node-cron).
