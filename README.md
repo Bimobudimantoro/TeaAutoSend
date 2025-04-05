@@ -23,8 +23,7 @@ You can directly download the `install.sh` script from GitHub.
 Run the following command in your terminal to download the script and start the installation:
 
 ```bash
-curl -sSL https://github.com/yourusername/auto-tx-install/raw/master/install.sh -o install.sh && chmod +x install.sh && ./install.sh
-```
+curl -sSL https://raw.githubusercontent.com/Bimobudimantoro/TeaAutoSend/main/install.sh -o install.sh && chmod +x install.sh && ./install.sh```
 
 ### 2. What the Script Does
 
