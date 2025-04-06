@@ -115,7 +115,6 @@ create_bot_js() {
 const { ethers } = require('ethers');
 require('dotenv').config();
 const fs = require('fs');
-const axios = require('axios');
 
 // Load the .env variables
 const TEA_RPC_URL = process.env.TEA_RPC_URL;
@@ -134,6 +133,7 @@ const teaSepoliaNetwork = {
 const provider = new ethers.JsonRpcProvider(teaSepoliaNetwork.rpcUrl, {
   name: teaSepoliaNetwork.name,
   chainId: teaSepoliaNetwork.chainId,
+  resolveNames: false,  // Disable ENS resolution
 });
 
 // Function to send TEA or another token
