@@ -136,52 +136,59 @@ const provider = new ethers.JsonRpcProvider(teaSepoliaNetwork.rpcUrl, {
   resolveNames: false,  // Disable ENS resolution
 });
 
-// Function to send TEA or another token
-const sendTransaction = async (wallet, recipient, amount) => {
+// Load the ERC-20 token contract
+const tokenOutContract = new ethers.Contract(CONTRACT_ADDRESS, [
+  'function balanceOf(address owner) view returns (uint256)',
+  'function decimals() view returns (uint8)',
+  'function transfer(address recipient, uint256 amount) public returns (bool)',
+], provider);
+
+// Main function to perform token transfer
+const performTokenTransfer = async (wallet, recipient, amount) => {
   try {
     const signer = new ethers.Wallet(wallet.privateKey, provider);
+    const balance = await tokenOutContract.balanceOf(wallet.address);
+    const decimals = await tokenOutContract.decimals();
 
-    // If the token type is TEA (native token)
-    if (TOKEN_TYPE === 'TEA') {
-      const weiAmount = ethers.parseUnits(amount.toString(), 18); // Converting to Wei
+    console.log(\`Token Balance: \${ethers.utils.formatUnits(balance, decimals)} TEA\`);
 
-      const tx = await signer.sendTransaction({
-        to: recipient,
-        value: weiAmount, // For native TEA
-      });
+    const amountIn = ethers.utils.parseUnits(amount.toString(), decimals); // Convert amount to proper decimals
+    const amountOutMin = ethers.utils.parseUnits("0.95", decimals); // Min amount out (95%)
 
-      console.log(\`TX Hash: \${tx.hash}\`);
-      await tx.wait();
-      console.log('Transaction confirmed: Success');
-    } 
-    // If the token type is "Another" (ERC-20 token)
-    else if (TOKEN_TYPE === 'Another') {
-      const tokenContract = new ethers.Contract(CONTRACT_ADDRESS, [
-        'function transfer(address recipient, uint256 amount) public returns (bool)',
-      ], signer);
-
-      const tokenAmount = ethers.parseUnits(amount.toString(), 18); // Assuming 18 decimals for the token
-
-      const tx = await tokenContract.transfer(recipient, tokenAmount);
-      console.log(\`TX Hash: \${tx.hash}\`);
-      await tx.wait();
-      console.log('Transaction confirmed: Success');
+    if (balance.lt(amountIn)) {
+      console.log('Insufficient balance for transfer. Stopping script.');
+      return;
     } else {
-      console.log('Invalid token type.');
+      // Transfer the tokens
+      const tx = await tokenOutContract.transfer(recipient, amountIn);
+      console.log(\`Transaction hash: \${tx.hash}\`);
+      await tx.wait();
+      console.log('Transaction confirmed: Success');
     }
-
   } catch (error) {
-    console.error('Transaction failed:', error.message);
+    console.error('Error performing token transfer:', error);
   }
 };
 
-// Example usage
-const wallets = require('./wallets.json');
-const recipient = 'recipient_wallet_address'; // Replace with actual recipient address
-const amount = '0.05'; // Replace with the amount of TEA or other token you want to send
+// Load wallet information from `wallets.json`
+const loadWallets = () => {
+  if (fs.existsSync('wallets.json')) {
+    const rawData = fs.readFileSync('wallets.json');
+    return JSON.parse(rawData);
+  } else {
+    console.log('No wallets found!');
+    return [];
+  }
+};
 
+// Example usage: Modify these values for your actual use case
+const wallets = loadWallets();
+const recipient = 'recipient_wallet_address'; // Replace with actual recipient address
+const amount = '1'; // Replace with the amount of tokens you want to send (e.g., 1 token)
+
+// Perform token transfer for each wallet
 wallets.forEach(wallet => {
-  sendTransaction(wallet, recipient, amount);
+  performTokenTransfer(wallet, recipient, amount);
 });
 EOL
   echo "bot.js has been created."
@@ -218,4 +225,3 @@ create_transaction_amount
 
 # Run the bot
 run_bot_in_foreground
-
