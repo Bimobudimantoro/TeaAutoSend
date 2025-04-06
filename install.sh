@@ -152,7 +152,7 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
     const decimals = await tokenOutContract.decimals();
     const symbol = await tokenOutContract.symbol();  // Get the token symbol (e.g., BIMO)
 
-    console.log(\`Balance fetched: \${balance.toString()}\`);
+    console.log(\`Balance fetched (raw): \${balance.toString()}\`);
     console.log(\`Decimals fetched: \${decimals}\`);
     console.log(\`Token Symbol: \${symbol}\`);  // Output the token symbol (BIMO)
 
