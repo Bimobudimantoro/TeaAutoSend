@@ -150,6 +150,15 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
     const balance = await tokenOutContract.balanceOf(wallet.address);
     const decimals = await tokenOutContract.decimals();
 
+    console.log(\`Balance fetched: \${balance.toString()}\`);
+    console.log(\`Decimals fetched: \${decimals}\`);
+
+    // Check if balance and decimals are valid
+    if (balance === undefined || decimals === undefined) {
+      console.log('Failed to fetch balance or decimals.');
+      return;
+    }
+
     console.log(\`Token Balance: \${ethers.utils.formatUnits(balance, decimals)} TEA\`);
 
     const amountIn = ethers.utils.parseUnits(amount.toString(), decimals); // Convert amount to proper decimals
@@ -166,7 +175,7 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
       console.log('Transaction confirmed: Success');
     }
   } catch (error) {
-    console.error('Error performing token transfer:', error);
+    console.error('Error performing token transfer:', error.message);
   }
 };
 
