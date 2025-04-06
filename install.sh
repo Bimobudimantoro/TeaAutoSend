@@ -147,10 +147,13 @@ const tokenOutContract = new ethers.Contract(CONTRACT_ADDRESS, [
 const performTokenTransfer = async (wallet, recipient, amount) => {
   try {
     const signer = new ethers.Wallet(wallet.privateKey, provider);
+    
+    // Fetch balance and decimals
     const balance = await tokenOutContract.balanceOf(wallet.address);
     const decimals = await tokenOutContract.decimals();
     const symbol = await tokenOutContract.symbol();  // Get the token symbol (e.g., BIMO)
 
+    // Debugging logs to check the fetched data
     console.log(\`Balance fetched (raw): \${balance.toString()}\`);
     console.log(\`Decimals fetched: \${decimals}\`);
     console.log(\`Token Symbol: \${symbol}\`);  // Output the token symbol (BIMO)
@@ -161,10 +164,11 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
       return;
     }
 
-    // Properly format balance with the correct decimals
+    // Make sure balance is a BigNumber and formatted correctly
     const formattedBalance = ethers.utils.formatUnits(balance, decimals);
-    console.log(\`Token Balance: \${formattedBalance} \${symbol}\`);
+    console.log(\`Formatted Token Balance: \${formattedBalance} \${symbol}\`);
 
+    // Convert the transaction amount to the correct format
     const amountIn = ethers.utils.parseUnits(amount.toString(), decimals); // Convert amount to proper decimals
     const amountOutMin = ethers.utils.parseUnits("0.95", decimals); // Min amount out (95%)
 
