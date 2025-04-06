@@ -156,7 +156,7 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
     console.log(\`Token Symbol: \${symbol}\`);  // Output the token symbol (BIMO)
 
     // Check if balance and decimals are valid
-    if (balance === undefined || decimals === undefined) {
+    if (!balance || !decimals) {
       console.log('Failed to fetch balance or decimals. Exiting.');
       return;
     }
