@@ -157,7 +157,7 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
 
     // Check if balance and decimals are valid
     if (balance === undefined || decimals === undefined) {
-      console.log('Failed to fetch balance or decimals.');
+      console.log('Failed to fetch balance or decimals. Exiting.');
       return;
     }
 
