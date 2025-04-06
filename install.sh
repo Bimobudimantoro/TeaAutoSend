@@ -140,6 +140,7 @@ const provider = new ethers.JsonRpcProvider(teaSepoliaNetwork.rpcUrl, {
 const tokenOutContract = new ethers.Contract(CONTRACT_ADDRESS, [
   'function balanceOf(address owner) view returns (uint256)',
   'function decimals() view returns (uint8)',
+  'function symbol() view returns (string)',
   'function transfer(address recipient, uint256 amount) public returns (bool)',
 ], provider);
 
@@ -149,9 +150,11 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
     const signer = new ethers.Wallet(wallet.privateKey, provider);
     const balance = await tokenOutContract.balanceOf(wallet.address);
     const decimals = await tokenOutContract.decimals();
+    const symbol = await tokenOutContract.symbol();  // Get the token symbol (e.g., BIMO)
 
     console.log(\`Balance fetched: \${balance.toString()}\`);
     console.log(\`Decimals fetched: \${decimals}\`);
+    console.log(\`Token Symbol: \${symbol}\`);  // Output the token symbol (BIMO)
 
     // Check if balance and decimals are valid
     if (balance === undefined || decimals === undefined) {
@@ -159,7 +162,9 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
       return;
     }
 
-    console.log(\`Token Balance: \${ethers.utils.formatUnits(balance, decimals)} TEA\`);
+    // Properly format balance with the correct decimals
+    const formattedBalance = ethers.utils.formatUnits(balance, decimals);
+    console.log(\`Token Balance: \${formattedBalance} \${symbol}\`);
 
     const amountIn = ethers.utils.parseUnits(amount.toString(), decimals); // Convert amount to proper decimals
     const amountOutMin = ethers.utils.parseUnits("0.95", decimals); // Min amount out (95%)
