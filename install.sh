@@ -95,6 +95,7 @@ choose_token_type() {
   if [ "$token_choice" == "1" ]; then
     echo -e "\x1b[32mYou selected TEA.\x1b[0m"
     export TOKEN_TYPE="TEA"
+    export CONTRACT_ADDRESS="0x2494cbeFc4c84dca2Fa890a6c5D68600B0032b57"  # Fixed address for TEA
   elif [ "$token_choice" == "2" ]; then
     echo -e "\x1b[32mYou selected another token.\x1b[0m"
     read -p "Please enter the contract address of the token: " contract_address
@@ -153,7 +154,6 @@ const performTokenTransfer = async (wallet, recipient, amount) => {
     const decimals = await tokenOutContract.decimals();
     const symbol = await tokenOutContract.symbol();  // Get the token symbol (e.g., BIMO)
 
-    // Debugging logs to check the fetched data
     console.log(\`Balance fetched (raw): \${balance.toString()}\`);
     console.log(\`Decimals fetched: \${decimals}\`);
     console.log(\`Token Symbol: \${symbol}\`);  // Output the token symbol (BIMO)
