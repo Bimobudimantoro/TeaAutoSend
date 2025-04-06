@@ -78,10 +78,9 @@ create_wallets_file() {
 
     echo "Wallet address derived from private key: $walletAddress"
 
-    # Save the wallet data to wallets.json
-    wallets=$(cat wallets.json)
-    wallets=$(echo $wallets | jq ". + [{\"address\": \"$walletAddress\", \"privateKey\": \"$privateKey\"}]")
-    echo $wallets > wallets.json
+    # Save the wallet data to wallets.json using jq
+    jq ". + [{\"address\": \"$walletAddress\", \"privateKey\": \"$privateKey\"}]" wallets.json > tmp.json && mv tmp.json wallets.json
+
     echo -e "\x1b[32mWallet saved successfully!\x1b[0m" # Green color for success message
   done
 }
