@@ -17,18 +17,6 @@ display_welcome_message() {
   echo -e "\x1b[0m"  # Reset to normal text color
 }
 
-# Function to simulate loading with a spinner animation
-loading_spinner() {
-  spinner="|/-\\"
-  i=0
-  while :; do  # Infinite loop to simulate loading
-    echo -n "${spinner:i%4:1}  "
-    sleep 0.2
-    echo -ne "\r"
-    ((i++))
-  done
-}
-
 # Function to check if Node.js is installed and install it if necessary
 install_nodejs() {
   if ! command -v node &> /dev/null
@@ -54,7 +42,7 @@ install_dependencies() {
 # Function to create .env file with fixed RPC URL and prompt for the API key
 create_env_file() {
   echo "Creating .env file..."
-  
+
   # Writing the fixed Tea Sepolia public RPC URL to .env
   echo "TEA_RPC_URL=https://tea-sepolia.g.alchemy.com/public" > .env
   echo "TEA_CHAIN_ID=10218" >> .env
@@ -137,6 +125,7 @@ const TEA_RPC_URL = process.env.TEA_RPC_URL;
 const TEA_CHAIN_ID = process.env.TEA_CHAIN_ID;
 const TEA_CURRENCY_SYMBOL = process.env.TEA_CURRENCY_SYMBOL;
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
+const TRANSACTION_AMOUNT = process.env.TRANSACTION_AMOUNT || '0.05';  // Read from .env
 
 // Load wallets from file (if exists)
 const loadWallets = () => {
@@ -161,37 +150,26 @@ const loadRecipients = () => {
 // Function to send a transaction using Tea Sepolia RPC
 const sendTransaction = async (wallet, recipient, amount) => {
   try {
-    // Check if the amount is valid
-    if (!amount || isNaN(amount) || amount <= 0) {
-      throw new Error("Invalid transaction amount");
-    }
-
-    // Set up provider and signer
-    const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
-    const signer = new ethers.Wallet(wallet.privateKey, provider);
-
     // Ensure the amount is formatted correctly as a string, and then convert to Wei (18 decimals for TEA)
     const weiAmount = ethers.parseUnits(amount.toString(), 18); // Convert TEA to Wei
 
-    // Fetch fee data (gas price, max priority fee, etc.) using `getFeeData()` (for ethers.js v6)
-    const feeData = await provider.getFeeData();
-    const gasPrice = feeData.gasPrice || ethers.BigNumber.from('0'); // Default gas price if not available
+    const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
+    const signer = new ethers.Wallet(wallet.privateKey, provider);
 
-    // Set up the transaction details
+    const feeData = await provider.getFeeData();
+    const gasPrice = feeData.gasPrice || ethers.BigNumber.from('0');
+
     const transaction = {
       to: recipient,
-      value: weiAmount, // Amount in WEI (converted from TEA)
-      gasLimit: 21000, // Default gas limit for simple ETH transfer
-      gasPrice: gasPrice, // Gas price
+      value: weiAmount,
+      gasLimit: 21000,
+      gasPrice: gasPrice,
     };
 
-    // Sign and send the transaction
     const txResponse = await signer.sendTransaction(transaction);
 
-    // Fetch wallet balance after transaction
     const balance = await getBalance(wallet.address);
 
-    // Log transaction details in requested format
     console.log("Wallet Address: \x1b[1m\x1b[30m" + wallet.address + "\x1b[0m");
     console.log("Wallet balance : \x1b[33m" + balance + " " + TEA_CURRENCY_SYMBOL + "\x1b[0m");
     console.log("Transactions : \x1b[32mOK\x1b[0m");
@@ -207,7 +185,7 @@ const getBalance = async (address) => {
   try {
     const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
     const balance = await provider.getBalance(address);
-    return ethers.formatUnits(balance, 18); // Convert from Wei to TEA
+    return ethers.formatUnits(balance, 18);
   } catch (error) {
     console.error('Failed to fetch balance:', error.message);
     return 0;
@@ -220,11 +198,10 @@ const startBulkSend = () => {
   let recipientIndex = 0;
   const wallets = loadWallets();
   const recipients = loadRecipients();
-  const transactionAmount = '0.05'; // Transaction amount in TEA (fixed)
 
   cron.schedule('* * * * *', async () => {
     if (walletIndex < wallets.length && recipientIndex < recipients.length) {
-      await sendTransaction(wallets[walletIndex], recipients[recipientIndex], transactionAmount);
+      await sendTransaction(wallets[walletIndex], recipients[recipientIndex], TRANSACTION_AMOUNT);
       walletIndex++;
       recipientIndex++;
 
@@ -244,10 +221,11 @@ EOL
   echo "bot.js has been created."
 }
 
-# Function to input transaction amount (nominal balance)
+# Function to input transaction amount (nominal balance) and save to .env
 create_transaction_amount() {
   echo "Please enter the nominal amount to send per transaction:"
   read transactionAmount
+  echo "TRANSACTION_AMOUNT=$transactionAmount" >> .env  # Save to .env
   echo -e "\x1b[32mTransaction amount set to: $transactionAmount TEA\x1b[0m"  # Set to green color
 }
 
@@ -279,7 +257,7 @@ create_wallets_file
 # Step 6: Check and convert recipients.txt to recipients.json (if exists)
 convert_recipients_to_json
 
-# Step 7: Ask for transaction amount
+# Step 7: Ask for transaction amount and save it to .env
 create_transaction_amount
 
 # Step 8: Create the bot.js file
