@@ -9,6 +9,7 @@ display_welcome_message() {
   echo -e "========================="
   echo -e "Donation for buying me a cup of coffee"
   echo -e "(EVM) : 0x48baa3ACE7CdDeE47C100e87A0FC0A653258eb55"
+  echo -e ""
   echo -e "(SOLANA) : 3mSmt3fLQdP1eG8JH9fGTU2Wm3Z2HSs2fbaf1KyPjUq7"
   echo -e "========================="
   echo -e "Thank you!"
@@ -53,6 +54,60 @@ create_env_file() {
   echo "ALCHEMY_API_KEY=$apiKey" >> .env
 
   echo ".env file created with Tea Sepolia public network details and Alchemy API key."
+}
+
+# Function to input private key and wallet address (one by one) and convert to JSON
+create_wallets_file() {
+  if [ ! -f wallets.json ]; then
+    echo "Creating wallets.json file..."
+    echo "[]" > wallets.json
+  fi
+
+  while true; do
+    echo "Please enter private key (or type 'save' to finish):"
+    read privateKey
+    if [ "$privateKey" == "save" ]; then
+      break
+    fi
+
+    # Derive wallet address from the private key using ethers.js
+    walletAddress=$(node -e "
+      const { ethers } = require('ethers');
+      const wallet = new ethers.Wallet('$privateKey');
+      console.log(wallet.address);
+    ")
+
+    echo "Wallet address derived from private key: $walletAddress"
+
+    # Save the wallet data to wallets.json
+    wallets=$(cat wallets.json)
+    wallets=$(echo $wallets | jq ". + [{\"address\": \"$walletAddress\", \"privateKey\": \"$privateKey\"}]")
+    echo $wallets > wallets.json
+    echo -e "\x1b[32mWallet saved successfully!\x1b[0m" # Green color for success message
+  done
+}
+
+# Function to automatically convert the list of recipient addresses into JSON format
+convert_recipients_to_json() {
+  if [ -f "recipients.txt" ]; then
+    echo "Checking recipients.txt... Found! Converting to recipients.json..."
+
+    # Start the JSON array
+    echo "[" > recipients.json
+
+    # Loop through the file and add each address to the JSON array
+    while read address; do
+      echo "  \"$address\"," >> recipients.json
+    done < "recipients.txt"
+
+    # Remove the last comma and close the JSON array
+    sed -i '$ s/,$//' recipients.json
+    echo "]" >> recipients.json
+
+    echo "Recipient addresses have been converted to recipients.json."
+  else
+    echo "No recipients.txt file found! Please create it manually or place it in this directory."
+  fi
 }
 
 # Function to fetch the current gas price in Gwei from the Sepolia Gas Tracker
@@ -101,13 +156,16 @@ const loadRecipients = () => {
 };
 
 // Function to send a transaction using Tea Sepolia RPC
-const sendTransaction = async (wallet, recipient, amount, gasPrice) => {
+const sendTransaction = async (wallet, recipient, amount) => {
   try {
     // Ensure the amount is formatted correctly as a string, and then convert to Wei (18 decimals for TEA)
     const weiAmount = ethers.parseUnits(amount.toString(), 18); // Convert TEA to Wei
 
     const provider = new ethers.JsonRpcProvider(TEA_RPC_URL);
     const signer = new ethers.Wallet(wallet.privateKey, provider);
+
+    // Fetch the gas price before each transaction
+    const gasPrice = await axios.get('https://sepolia.tea.xyz/gas-tracker').then(response => response.data.fast);
 
     const transaction = {
       to: recipient,
@@ -143,18 +201,15 @@ const getBalance = async (address) => {
 };
 
 // Function to start the bulk sending process with 1-minute intervals
-const startBulkSend = async () => {
+const startBulkSend = () => {
   let walletIndex = 0;
   let recipientIndex = 0;
   const wallets = loadWallets();
   const recipients = loadRecipients();
 
-  // Fetch current gas price before starting
-  const gasPrice = await axios.get('https://sepolia.tea.xyz/gas-tracker').then(response => response.data.fast);
-
   cron.schedule('* * * * *', async () => {
     if (walletIndex < wallets.length && recipientIndex < recipients.length) {
-      await sendTransaction(wallets[walletIndex], recipients[recipientIndex], TRANSACTION_AMOUNT, gasPrice);
+      await sendTransaction(wallets[walletIndex], recipients[recipientIndex], TRANSACTION_AMOUNT);
       walletIndex++;
       recipientIndex++;
 
