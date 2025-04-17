@@ -176,7 +176,7 @@ const sendTransaction = async (wallet, recipient, amount) => {
       // Scrape the webpage to get the gas price
       const response = await axios.get('https://sepolia.tea.xyz/gas-tracker');
       const $ = cheerio.load(response.data); // Load HTML content into cheerio
-      gasPrice = $('.card-header').first().next().text().trim().split(' ')[0]; // Extract gas price from the webpage
+      gasPrice = $('.card-header').first().next().next().text().trim().split(' ')[0]; // Extract gas price from the webpage
 
       if (!gasPrice) {
         console.warn("Gas price is undefined, using default gas price.");
