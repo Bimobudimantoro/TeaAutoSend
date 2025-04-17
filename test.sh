@@ -165,7 +165,17 @@ const sendTransaction = async (wallet, recipient, amount) => {
     const signer = new ethers.Wallet(wallet.privateKey, provider);
 
     // Fetch the gas price before each transaction
-    const gasPrice = await axios.get('https://sepolia.tea.xyz/gas-tracker').then(response => response.data.fast);
+    let gasPrice;
+    try {
+      gasPrice = await axios.get('https://sepolia.tea.xyz/gas-tracker').then(response => response.data.fast);
+      if (!gasPrice) {
+        console.warn("Gas price is undefined, using default gas price.");
+        gasPrice = '10'; // Fallback to a default gas price (in Gwei)
+      }
+    } catch (error) {
+      console.error("Error fetching gas price:", error);
+      gasPrice = '10'; // Fallback to a default gas price if the API request fails
+    }
 
     const transaction = {
       to: recipient,
