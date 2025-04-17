@@ -34,6 +34,11 @@ install_jq() {
   fi
 }
 
+# Function to install cheerio (for HTML parsing)
+install_cheerio() {
+  npm install cheerio > /dev/null 2>&1
+}
+
 # Function to install project dependencies (including axios, node-cron, dotenv, ethers.js)
 install_dependencies() {
   npm install --save axios node-cron dotenv ethers > /dev/null 2>&1
@@ -110,10 +115,10 @@ convert_recipients_to_json() {
   fi
 }
 
-# Function to fetch the current gas price in Gwei from the Sepolia Gas Tracker
+# Function to fetch the current gas price in Gwei from the Sepolia Gas Tracker (Scraping)
 fetch_current_gas_price() {
   echo "Fetching current gas price from Sepolia Gas Tracker..."
-  gas_price=$(curl -s https://sepolia.tea.xyz/gas-tracker | jq '.fast')
+  gas_price=$(curl -s https://sepolia.tea.xyz/gas-tracker | grep -oP 'Fast.*?(\d+\.\d+)' | sed 's/.*\([0-9\.]*\)/\1/')
   echo "Current gas price: $gas_price Gwei"
   echo $gas_price
 }
@@ -124,6 +129,7 @@ create_bot_js() {
   cat > bot.js <<EOL
 const axios = require('axios');
 const cron = require('node-cron');
+const cheerio = require('cheerio'); // Import cheerio to parse HTML
 require('dotenv').config();
 const fs = require('fs');
 const { ethers } = require('ethers');
@@ -167,7 +173,11 @@ const sendTransaction = async (wallet, recipient, amount) => {
     // Fetch the gas price before each transaction
     let gasPrice;
     try {
-      gasPrice = await axios.get('https://sepolia.tea.xyz/gas-tracker').then(response => response.data.fast);
+      // Scrape the webpage to get the gas price
+      const response = await axios.get('https://sepolia.tea.xyz/gas-tracker');
+      const $ = cheerio.load(response.data); // Load HTML content into cheerio
+      gasPrice = $('.card-header').first().next().text().trim().split(' ')[0]; // Extract gas price from the webpage
+
       if (!gasPrice) {
         console.warn("Gas price is undefined, using default gas price.");
         gasPrice = '10'; // Fallback to a default gas price (in Gwei)
@@ -262,6 +272,7 @@ echo -e "\x1b[32mStarting one-click installer...\x1b[0m"
 {
   install_nodejs &
   install_jq &
+  install_cheerio &
   install_dependencies &
   wait  # Wait for all background processes to finish
 }
